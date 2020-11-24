@@ -1,0 +1,551 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "API SAA",
+        "version": "v1",
+        "description": "# Visión general\nCarga de estados de cuenta por los proveedores de Aseguradoras que tienen contratado AudaMedic.\n#### Procesos de negocio y funciones principales\n- El hospital envía el listado de estados de cuenta relacionados a los ingresos hospitalarios que ha reportado.\n- El hospital consulta el estatus actual de un estado de cuenta reportado previamente.\n\n# Autorización\nPara acceder a los servicios disponibles en esta API se deberán seguir los pasos descritos a continuación: \n1. Estar registrado en nuestra base de datos o solicitar el registro.\n2. Al completar el paso anterior le serán proporcionados los siguientes datos:\n|item|valor|\n|---|---|\n|1|client_id|\n|2|client_secret|\n\n3. Con los datos proporcionados, realice una peticion `POST`, la cual debe tener en su `BODY` los siguientes datos (los datos que se muestran a continuación son a modo de ejemplo): \n|key|value|\n|---|---|\n|client_id|nombre_cliente|\n|grant_type|client_credentials|\n|client_secret|99c14dsafdsf-4c58-asf4-asdf4587|\n\n    La petición debe realizarse a la siguiente estructura de URL:\n\n    <code>*http://{urlServicio}:{puerto}/auth/realms/{realm}/protocol/openid-connect/token*</code>\n\n    Donde los datos envueltos en corchetes deben de ser provistos teniendo en cuenta lo siguiente:\n\n    **urlServicio** : Se refiere a la dirección IP o dominio donde se ejecuta la aplicación (este dato debe de confirmarse con el equipo de soporte), por ejemplo www.aseguradora.com  o 192.168.100.1.\n\n    **puerto** : Se refiere al puerto donde el servicio atiende las solicitudes de token (este dato debe de confirmarse con el equipo de soporte), por ejemplo 8080.\n\n    **realm** : Se refiere al reino que controla el acceso a los servicios (este dato debe de confirmarse con el equipo de soporte).\n4. Al realizar la petición mencionada el sistema devolvera un `JSON` con la siguiente información:\n\n    ```json\n        {\n        \"access_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCIVkIjoibWV0bGlmZSIsInN1YiI6IjIxYjkwOGZlLTBhYWYtNDc0ZS05MGMyLTEwODVjZDQ2MDY2YSIsInR5cCI6IkJlYXJlciIsImF6cCI6Im1ldGxpZmUiLCJhdXRoX3RpbWUiOjAsInNlc3Npb25fc3RhdGUiOiJjYjE4ZjE5My01N2FlLTQ1ZWYtYjMyYS0yYjYyYmE2MDIyNzkiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbXSwicmVzb3VyY2VfYWNjZXNzIjp7fSwiY2xpZW50SG9zdCI6IjE5Mi4xNjguMC4xNTkiLCJjbGllbnRJZCI6Im1ldGxpZmUiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJzZXJ2aWNlLWFjY291bnQtbWV0bGlmZSIsImNsaWVudEFkZHJlc3MiOiIxOTIuMTY4LjAuMTU5IiwiZW1haWwiOiJzZXJ2aWNlLWFjY291bnQtbWV0bGlmZUBwbGFjZWhvbGRlci5vcmcifQ.ijDPLZYbTVznw5HA0BipZq0N_QU-hT4VU7KaTFgz80dYrlOq2_gdNzLymv4UeuPGHwhNNMefxjCT6cAL_D3XmzfeRFzxf0mGml5DCTNeHofPKTotoQirTsMN3ut_Joe6_BKohPp6xaOaqmLOechxSiDVwz8QFY1dqQVDKB4Bc5GmFDNm9v4I78JZkaOjh6cHHXmLcqW_sovqoA0sH-NT2Vyx-hzHiTVfM6KYtseW-4IbNIS8l-w6l08aewh-hkMA61btvSK5hWvtAoNOpPhEgcUf0rIq20xW_tzZSI4eDgwu9A25_WOK--zigOfIJFyUcwjc4uyCZZC2Sa_GapXY6w\",\n        \"expires_in\": 18500,\n        \"refresh_expires_in\": 18500,\n        \"refresh_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ4cUZ4dFd5UTJfSHR5azdDaVpNWG5XN2prWGllX2g0LWRfZERsM1JfMlgwIn0.eyJqdGkiOiIxZjMxZDA2ZC00YzEwLTQxYmQtYTFmNS0xNzlkYmNhYjEyNjgiLCJleHAiOjE1NzUwNDY5NjMsIm5iZiI6MCwiaWF0IjoxNTc1MDQ1MTYzLCJpc3MiOiJodHRwOi8vMTkyLjE2OC42LjM0OjgwODAvYXV0aC9yZWFsbXMvYXV0b3NlcnZpY2lvcy1kZW1vIiwiYXVkIjoibWV0bGlmZSIsInN1YiI6IjIxYjkwOGZlLTBhYWYtNDc0ZS05MGMyLTEwODVjZDQ2MDY2YSIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJtZXRsaWZlIiwiYXV0aF90aW1lIjowLCJzZXNzaW9uX3N0YXRlIjoiY2IxOGYxOTMtNTdhZS00NWVmLWIzMmEtMmI2MmJhNjAyMjc5IiwicmVzb3VyY2VfYWNjZXNzIjp7fX0.a_w1HKETh1j6fUkddtTxmJK6NoW0Dzs5pK4NICizr3PjCi54_hrdwRo_gpHAXj4xjcRG6TAcXASApWgRUGEyeV1RzWP8BeDBHxmTodK-bqRhWaYWsLag\",\n        \"token_type\": \"bearer\",\n        \"not-before-policy\": 1574348648,\n        \"session_state\": \"cb18f193-57ae-45kef-b32va-2b62ba6dsfaf02279\"\n        }\n    ```\n\n    Usted debe tomar el `\"access_token\"` y almacenarlo para posteriormente agregarlo en los `HEADERS` de todas sus peticiones de la siguiente manera:\n    |item|valor|\n    |---|---|\n    |Authorization|Bearer eyJhbGciOiJSUzI1NiIsInR....|\n\n    **NOTA:** En caso que su token este vencido, no sea valido o este corrupto, el sistema retornará la siguiente respuesta `HTML`, con codigo de error `401`:\n\n    <pre><code>\n    &lt;html&gt\n        &lt;head&gt\n            &lt;title&gtError&lt;/title&gt\n        &lt;/head&gt\n        &lt;body>Unauthorized&lt;/body&gt\n    &lt;/html&gt \n    </code></pre>\n",
+        "contact": {
+
+        },
+        "x-logo": {
+            "url": "https://i.imgur.com/Xq8WK7S.png"
+        }
+    },
+    "host": "audamedic.com",
+    "basePath": "/saa-ws/rest/",
+    "schemes": [
+        "https"
+    ],
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/v1/estados-cuenta/": {
+            "post": {
+                "tags": [
+                    "Estados de Cuenta"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "schema": {
+                            "$ref": "#/definitions/solicitud_estado_cuenta"
+                        },
+                        "in": "body",
+                        "required": true
+                    },
+                    {
+                        "name": "client_id",
+                        "description": "identificador del client_id solicitado en la autorizacion ",
+                        "in": "header",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Authorization",
+                        "description": "Bearer token",
+                        "in": "header",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "schema": {
+                            "$ref": "#/definitions/respuesta_estado_cuenta"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "idTransaccion": 20201111546
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error al procesar la información",
+                        "schema": {
+                            "$ref": "#/definitions/NegocioRuntimeException"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "errores": [
+                                    {
+                                        "codigo": "ERR056",
+                                        "descripcion": "No se encontró un ingreso hospitalario para el paciente reportado",
+                                        "objetivo": "BPM190000000011461",
+                                        "campo": "numeroTramite"
+                                    },
+                                    {
+                                        "codigo": "ERR058",
+                                        "descripcion": "Se debe enviar al menos una actividad o concepto en un estado de cuenta",
+                                        "objetivo": "25/10/2019",
+                                        "campo": "fechaGeneracion"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Servicio no disponible"
+                    }
+                },
+                "operationId": "SR-02",
+                "summary": "Envío de estados de cuenta",
+                "description": "Interfaz que recibe los estados de cuenta reportados por un determinado hospital a una determinada Aseguradora configurada en AudaMedic."
+            }
+        },
+        "/v1/estados-cuenta/{idEstadoCuenta}": {
+            "get": {
+                "tags": [
+                    "Estados de Cuenta"
+                ],
+                "parameters": [
+                    {
+                        "name": "idEstadoCuenta",
+                        "description": "Identificador del estado de cuenta en AudaMedic.",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "client_id",
+                        "description": "identificador del client_id solicitado en la autorizacion",
+                        "in": "header",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "Authorization",
+                        "description": "Bearer token",
+                        "in": "header",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "schema": {
+                            "$ref": "#/definitions/respuesta_estado_cuenta_consulta"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "estatusEstadoCuenta": "CON ERRORES",
+                                "errores": [
+                                    {
+                                        "codigo": "ERR048",
+                                        "descripcion": "El trámite ya supero los 2 días permitidos para reportar comandas y documentos después de la fecha de egreso hospitalario.",
+                                        "campo": "numeroEpisodio"
+                                    },
+                                    {
+                                        "codigo": "ERR052",
+                                        "descripcion": "El estatus actual del ingreso hospitalario del trámite debe ser Autorizado o Positivo por dictaminar",
+                                        "campo": "numeroEpisodio"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Error al procesar la información",
+                        "schema": {
+                            "$ref": "#/definitions/NegocioRuntimeException"
+                        },
+                        "examples": {
+                            "application/json": {
+                                "errores": [
+                                    {
+                                        "codigo": "ERR054",
+                                        "descripcion": "No se encontró un estado de cuenta con el id enviado",
+                                        "objetivo": "7857467",
+                                        "campo": "idEstadoCuenta"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Servicio no disponible"
+                    }
+                },
+                "operationId": "SR-05",
+                "summary": "Consultar estado de cuenta",
+                "description": "Interfaz que permite consultar el estatus actual de un estado de cuenta que fue cargado previamente en AudaMedic."
+            },
+            "parameters": [
+                {
+                    "name": "idEstadoCuenta",
+                    "description": "Identificador de la transacción en la cual fue enviado el estado de cuenta.",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        }
+    },
+    "definitions": {
+        "cobro": {
+            "title": "Representación de una Actividad o Cobro",
+            "description": "Entidad que representa la información relacionada a un Cobro o Actividad.",
+            "required": [
+                "descripcionCobro",
+                "fechaCobro",
+                "unidades"
+            ],
+            "type": "object",
+            "properties": {
+                "codigoCobro": {
+                    "description": "Identificador de la actividad o concepto cobrado.",
+                    "maxLength": 100,
+                    "type": "string"
+                },
+                "descripcionCobro": {
+                    "description": "Descripción de la actividad o concepto cobrado.",
+                    "maxLength": 350,
+                    "type": "string"
+                },
+                "fechaCobro": {
+                    "description": "Fecha en la cual fue aplicado la actividad o concepto cobrado.",
+                    "maxLength": 10,
+                    "type": "string"
+                },
+                "lugarAtencion": {
+                    "description": "Código del Lugar de atención donde se presta el servicio de la actividad o concepto cobrado.",
+                    "maxLength": 10,
+                    "type": "string"
+                },
+                "unidades": {
+                    "format": "double",
+                    "description": "Número de unidades cobradas por la actividad o concepto. **Se permiten** ```6 caracteres``` enteros y ```2 caracteres``` decimales.",
+                    "maxLength": 8,
+                    "type": "number"
+                },
+                "precioUnitario": {
+                    "format": "double",
+                    "description": "Valor unitario cobrado por la actividad o concepto. **Se permiten** ```14 caracteres``` enteros y ```2 caracteres``` decimales.",
+                    "maxLength": 16,
+                    "type": "number"
+                },
+                "valorDescuento": {
+                    "format": "double",
+                    "description": "Valor del descuento aplicado a una actividad o concepto cobrado. **Se permiten** ```14 caracteres``` enteros y ```2 caracteres``` decimales.",
+                    "maxLength": 16,
+                    "type": "number"
+                },
+                "porcentajeDescuento": {
+                    "format": "double",
+                    "description": "Porcentaje de descuento aplicado a una actividad o concepto cobrado. **Se permiten** ```3 caracteres``` enteros y ```2 caracteres``` decimales.",
+                    "maxLength": 5,
+                    "type": "number"
+                },
+                "valorIVA": {
+                    "format": "double",
+                    "description": "Valor del IVA aplicado a una actividad o concepto cobrado. **Se permiten** ```14 caracteres``` enteros y ```2 caracteres``` decimales.",
+                    "maxLength": 16,
+                    "type": "number"
+                },
+                "porcentajeIVA": {
+                    "format": "double",
+                    "description": "Porcentaje de IVA aplicado a una actividad o concepto cobrado. **Se permiten** ```3 caracteres``` enteros y ```2 caracteres``` decimales.",
+                    "maxLength": 5,
+                    "type": "number"
+                },
+                "importe": {
+                    "format": "double",
+                    "description": "Valor que resulta del producto de las Unidades y el Precio unitario de la actividad o concepto cobrado. **Se permiten** ```14 caracteres``` enteros y ```2 caracteres``` decimales.",
+                    "maxLength": 16,
+                    "type": "number"
+                },
+                "importeDescuentoIVA": {
+                    "format": "double",
+                    "description": "Valor que resulta de restar el Descuento al Importe  y sumarle el valor del IVA a una actividad o concepto cobrado. **Se permiten** ```14 caracteres``` enteros y ```2 caracteres``` decimales.",
+                    "maxLength": 16,
+                    "type": "number"
+                }
+            },
+            "example": {
+                "codigoCobro": "406007321",
+                "descripcionCobro": "BIOMETRIA HEMATICA CON DIFERENCIAL",
+                "fechaCobro": "15/04/2019 12:07:00",
+                "lugarAtencion": "URG",
+                "unidades": 1,
+                "valorDescuento": 41.27,
+                "porcentajeDescuento": 11,
+                "valorIVA": 42.87,
+                "porcentajeIVA": 16,
+                "importe": 33.9,
+                "importeDescuentoIVA": 65.45
+            }
+        },
+        "error_negocio": {
+            "title": "Representación de un error de negocio",
+            "description": "Entidad para representar un error de negocio en el sistema",
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "description": "Código del error presentado.",
+                    "type": "string"
+                },
+                "descripcion": {
+                    "description": "Descripción del error presentado.",
+                    "type": "string"
+                },
+                "objetivo": {
+                    "description": "Identificador del registro en un listado en el cual se genera el error.",
+                    "type": "string"
+                },
+                "campo": {
+                    "description": "Nombre del campo relacionado al error generado.",
+                    "type": "string"
+                }
+            },
+            "example": {
+                "codigo": "ERR038",
+                "descripcion": "El campo diagnostico es obligatorio",
+                "objetivo": "J35",
+                "campo": "diagnostico"
+            }
+        },
+        "NegocioRuntimeException": {
+            "title": "Representación de un error interno debido a una excepcion",
+            "description": "Entidad que permite notificar de los errores de negocio generados por el API.",
+            "required": [
+                "errores"
+            ],
+            "type": "object",
+            "properties": {
+                "errores": {
+                    "description": "Listado de errores presentados en la validación de la información enviada.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/error_negocio"
+                    }
+                }
+            }
+        },
+        "consulta_estado_cuenta": {
+            "description": "Entidad que representan la información que debe envíar el proveedor para consultar el estado de un estado de cuenta que fue enviado previamente",
+            "required": [
+                "idTransaccion"
+            ],
+            "type": "object",
+            "properties": {
+                "idTransaccion": {
+                    "description": "Identificador de la transacción en la cual fue enviado el estado de cuenta.",
+                    "type": "string"
+                }
+            }
+        },
+        "respuesta_estado_cuenta_consulta": {
+            "description": "Entidad que representa la información que debe retornarse al hospital en la consulta de un estado de cuenta cargado previamente.",
+            "required": [
+                "estatusEstadoCuenta"
+            ],
+            "type": "object",
+            "properties": {
+                "estatusEstadoCuenta": {
+                    "description": "Estado actual del estado de cuenta.",
+                    "type": "string"
+                },
+                "errores": {
+                    "description": "Listado de errores presentados en la validación de la información enviada.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/error_estado_cuenta"
+                    }
+                }
+            }
+        },
+        "error_estado_cuenta": {
+            "title": "Representación de un error generado en la validación de un estado de cuenta",
+            "description": "Entidad para representar un error que puede presentarse en un estado de cuenta",
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "description": "Código del error presentado",
+                    "type": "string"
+                },
+                "descripcion": {
+                    "description": "Descripción del error presentado.",
+                    "type": "string"
+                },
+                "campo": {
+                    "description": "Nombre del campo relacionado al error generado.",
+                    "type": "string"
+                }
+            }
+        },
+        "respuesta_estado_cuenta": {
+            "description": "Entidad que representa la información que se retorna cuando se procesa un estado de cuenta.",
+            "type": "object",
+            "properties": {
+                "idTransaccion": {
+                    "description": "Identificador asignado a la transacción en la que fue enviado el estado de cuenta.",
+                    "type": "number"
+                }
+            }
+        },
+        "solicitud_estado_cuenta": {
+            "description": "Entidad que representa toda la información que debe enviarse cuando un hospital desee enviar un estado de cuenta para que sean cargados en AudaMedic.",
+            "required": [
+                "codAseguradora",
+                "codHospital",
+                "primerNombre",
+                "primerApellido",
+                "fechaGeneracion",
+                "cobros"
+            ],
+            "type": "object",
+            "properties": {
+                "codAseguradora": {
+                    "description": "Identificador único de la aseguradora a la cual se le reportan los estados de cuenta.",
+                    "maxLength": 10,
+                    "type": "string"
+                },
+                "codHospital": {
+                    "description": "Identificador único del hospital que reporta los estados de cuenta.",
+                    "maxLength": 4,
+                    "type": "string"
+                },
+                "numeroTramite": {
+                    "description": "Identificador único emitido por la Aseguradora para identificar un ingreso hospitalario.",
+                    "maxLength": 39,
+                    "type": "string"
+                },
+                "numeroEpisodio": {
+                    "description": "Identificador único del paciente en el hospital que reporta el ingreso hospitalario.",
+                    "maxLength": 20,
+                    "type": "string"
+                },
+                "fechaIngreso": {
+                    "description": "Fecha en la cual se reporta el ingreso hospitalario",
+                    "maxLength": 10,
+                    "type": "string"
+                },
+                "primerNombre": {
+                    "description": "Primer nombre del paciente.",
+                    "maxLength": 20,
+                    "type": "string"
+                },
+                "segundoNombre": {
+                    "description": "Segundo nombre del paciente.",
+                    "maxLength": 20,
+                    "type": "string"
+                },
+                "primerApellido": {
+                    "description": "Primer apellido del paciente.",
+                    "maxLength": 30,
+                    "type": "string"
+                },
+                "segundoApellido": {
+                    "description": "Segundo apellido del paciente.",
+                    "maxLength": 30,
+                    "type": "string"
+                },
+                "fechaNacimiento": {
+                    "description": "Fecha de nacimiento del paciente.",
+                    "maxLength": 10,
+                    "type": "string"
+                },
+                "genero": {
+                    "description": "Género del paciente.",
+                    "maxLength": 2,
+                    "type": "string"
+                },
+                "fechaEgreso": {
+                    "description": "Fecha en la cual se reporta el egreso hospitalario del paciente.",
+                    "maxLength": 10,
+                    "type": "string"
+                },
+                "fechaGeneracion": {
+                    "description": "Fecha en la cual se generó el estado de cuenta.",
+                    "maxLength": 10,
+                    "type": "string"
+                },
+                "nombresApellidosMedico": {
+                    "description": "Nombres y Apellidos del médico tratante.",
+                    "maxLength": 100,
+                    "type": "string"
+                },
+                "tipoValidacion": {
+                    "description": "Permite identificar si se trata de un estado de cuenta de Alta. Sólo se almacena si se envía el valor ```V```.",
+                    "maxLength": 1,
+                    "type": "string"
+                },
+                "cobros": {
+                    "description": "Listado de cobros enviados en un estado de cuenta.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cobro"
+                    }
+                }
+            },
+            "example": {
+                "codAseguradora": "002",
+                "codHospital": 12,
+                "numeroTramite": "BPM190000000011447",
+                "numeroEpisodio": "567890",
+                "primerNombre": "CLAUDIA",
+                "segundoNombre": "MARCELA",
+                "primerApellido": "ENRIQUEZ",
+                "segundoApellido": "PEREZ",
+                "fechaNacimiento": "15/08/1998 00:00:00",
+                "genero": "F",
+                "fechaEgreso": "26/08/2019 12:00:00",
+                "fechaGeneracion": "27/08/2019 17:50:00",
+                "nombresApellidosMedico": "JUAN CARLOS ANDRADE SUAREZ",
+                "tipoValidacion": "V",
+                "cobros": [
+                    {
+                        "codigoCobro": "406005463",
+                        "descripcionCobro": "EXAMEN ORINA RUTINA",
+                        "fechaCobro": "27/08/2019 19:35:00",
+                        "lugarAtencion": "",
+                        "unidades": 3,
+                        "precioUnitario": 242.46,
+                        "valorDescuento": 0,
+                        "porcentajeDescuento": 12,
+                        "valorIVA": 0,
+                        "porcentajeIVA": 16,
+                        "importe": 727.38,
+                        "importeDescuentoIVA": 0
+                    },
+                    {
+                        "codigoCobro": "406000395",
+                        "descripcionCobro": "CULTIVO ORINA RUTINA",
+                        "fechaCobro": "27/08/2019 19:38:00",
+                        "lugarAtencion": "",
+                        "unidades": 1,
+                        "precioUnitario": 699.35,
+                        "valorDescuento": 0,
+                        "porcentajeDescuento": 12,
+                        "valorIVA": 0,
+                        "porcentajeIVA": 16,
+                        "importe": 699.35,
+                        "importeDescuentoIVA": 0
+                    }
+                ]
+            }
+        }
+    },
+    "securityDefinitions": {
+
+    },
+    "tags": [
+        {
+            "name": "Estados de Cuenta",
+            "description": "Interfaces relacionadas a procesos realizados con Estados de Cuenta."
+        }
+    ],
+    "x-tagGroups": [
+        {
+            "name": "Interfaces",
+            "tags": [
+                "Estados de Cuenta"
+            ]
+        }
+    ]
+}
